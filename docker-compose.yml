@@ -1,0 +1,16 @@
+services:
+  linkedin-connect:
+    build: .
+    image: linkedin-connect:latest
+    container_name: linkedin-connect
+    ports:
+      - "127.0.0.1:8000:8000"   # dashboard
+      - "127.0.0.1:6080:6080"   # live browser view (noVNC)
+    volumes:
+      - ./data:/data                          # history, settings, LinkedIn session, logs
+      - ./config.yaml:/app/config.yaml:ro     # base config (the UI saves overrides in data/settings.json)
+    environment:
+      - TZ=${TZ:-UTC}           # set your timezone in .env (kept out of git), e.g. TZ=Europe/London
+    init: true                 # reaps exited Chromium processes
+    shm_size: "1gb"            # Chromium needs more than Docker's 64 MB default
+    restart: unless-stopped    # comes back when Docker Desktop starts

@@ -1,0 +1,15 @@
+.venv
+browser_profile
+data
+logs
+history.db
+state.json
+STOP
+__pycache__
+schedule
+*.pyc
+.env
+.DS_Store
+session.json
+*session*.json
+.git

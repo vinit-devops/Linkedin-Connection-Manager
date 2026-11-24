@@ -1,0 +1,70 @@
+# LinkedIn connection-request automation: settings
+# Every number below is yours to change. See README.md for what each one does.
+
+# ---- Volume -------------------------------------------------------------
+# A random target between min and max is picked each day.
+# LinkedIn allows roughly 100 invites per rolling 7 days (sometimes up to 200),
+# so 50/day would hit the cap in about 2 days. weekly_cap protects you.
+daily_limit_min: 15
+daily_limit_max: 25
+weekly_cap: 100            # hard limit across the last 7 days
+
+# Ramp up slowly on a new or rarely-used account.
+warmup:
+  enabled: true
+  start_date: null         # null = the date of the first run (saved automatically)
+  start_per_day: 5
+  increase_per_week: 5     # week 1: 5/day, week 2: 10/day, ... until daily_limit_max
+
+# ---- Where to find people (tried in this order) --------------------------
+# Options: suggested | search | profile_urls
+sources:
+  - search
+  - suggested
+
+search:
+  # One LinkedIn people search per entry (order is shuffled each run).
+  # Examples: replace with the roles you want (or set them in the dashboard).
+  keywords:
+    - "software engineer"
+    - "product manager"
+  network: ["S"]                  # S = 2nd-degree, O = 3rd+ (F = 1st, never useful here)
+  geo_urn: []                     # optional LinkedIn location IDs (from a search URL's geoUrn). Empty = anywhere.
+  max_pages: 5
+
+profile_urls_file: targets.txt    # one https://www.linkedin.com/in/... per line
+
+# ---- Who to target --------------------------------------------------------
+# Matched (case-insensitive) against each person's name + headline card text.
+filters:
+  # Whole-word match on the headline. Applies to search AND suggested people.
+  include_keywords: ["engineer", "product manager"]   # examples
+  exclude_keywords: ["student", "intern", "looking for", "open to work"]
+  require_mutual_connections: false
+  # profile_urls ignores filters: you picked those people by hand.
+
+# ---- Notes ----------------------------------------------------------------
+# Free accounts can add a note to only ~3-5 invites per month.
+# Leave note empty to always send without one.
+note: ""                          # e.g. "Hi {first_name}, I'd love to connect!"  (max 200 chars)
+note_monthly_cap: 5
+
+# ---- Housekeeping ---------------------------------------------------------
+accept_invites_on_run: false       # accept all incoming connection requests at the start of each run
+accept_max_per_run: 50
+withdraw_pending_after_days: 21   # withdraw old unanswered invites before each run. 0 = off.
+withdraw_max_per_run: 10
+
+# ---- Pacing / safety ------------------------------------------------------
+delay_seconds_min: 25
+delay_seconds_max: 70
+active_hours: [9, 19]             # only run between these hours (24h, local time)
+start_jitter_minutes: 30          # scheduled runs wait a random 0-N minutes before starting
+pause_days_after_warning: 3       # after a LinkedIn limit/security warning, skip runs for N days
+max_consecutive_failures: 3
+page_load_timeout_seconds: 40     # LinkedIn renders Connect buttons slowly (~15s on search)
+suggested_max_idle_scrolls: 10    # how many scrolls without new suggestions before giving up
+
+# ---- Browser --------------------------------------------------------------
+headless: false
+dry_run: false                    # true = log who would be invited, click nothing

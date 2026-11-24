@@ -1,0 +1,21 @@
+# Local environment
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+
+# Personal data: LinkedIn session, contact history, logs (never commit these)
+data/
+browser_profile/
+history.db
+*.db
+state.json
+settings.json
+scheduler.json
+logs/
+STOP
+
+# Exported LinkedIn cookies (export-session). Treat like a password.
+session.json
+*session*.json

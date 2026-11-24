@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LinkedIn Connect</title>
+<style>
+  :root {
+    --bg:#f6f5f2; --surface:#fff; --ink:#191c1f; --ink-2:#5b6168; --ink-3:#8b9198; --line:#e7e4df;
+    --accent:#0a66c2; --accent-ink:#fff; --accent-soft:#eaf2fb;
+    --good:#0f7b45; --good-soft:#e7f5ed; --warn:#9a5b00; --warn-soft:#fdf2df; --bad:#b42318; --bad-soft:#fdeceb;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+    --r:14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1214; --surface:#181c20; --ink:#e9ecef; --ink-2:#a5acb3; --ink-3:#7a828a; --line:#2a3036;
+      --accent:#5aa9f2; --accent-ink:#06213a; --accent-soft:#132638;
+      --good:#58cf92; --good-soft:#10281c; --warn:#f2b45c; --warn-soft:#2c2212; --bad:#f2877e; --bad-soft:#2e1614;
+      --shadow:none; }
+  }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing:antialiased; }
+  button, input, textarea { font:inherit; color:inherit; }
+  a { color:var(--accent); text-decoration:none; }
+
+  .top { position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .top-in { max-width:980px; margin:0 auto; padding:14px 24px 0; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .logo { width:28px; height:28px; border-radius:7px; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-weight:700; font-size:14px; }
+  .brand h1 { font-size:16px; margin:0; font-weight:650; }
+  .brand .spacer { flex:1; }
+  .status { display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-2); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--ink-3); flex:none; }
+  .dot.good { background:var(--good); } .dot.bad { background:var(--bad); } .dot.busy { background:var(--accent); animation:pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity:.35; } }
+  nav { display:flex; gap:4px; margin-top:10px; }
+  nav a { padding:9px 14px; border-bottom:2px solid transparent; color:var(--ink-2); font-weight:550; font-size:14px; }
+  nav a.on { color:var(--ink); border-color:var(--accent); }
+
+  main { max-width:980px; margin:0 auto; padding:24px; }
+  section.view { display:grid; gap:20px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:22px; }
+  .card h2 { margin:0 0 4px; font-size:15px; font-weight:650; }
+  .card .lede { margin:0 0 16px; color:var(--ink-2); font-size:13.5px; }
+  .muted { color:var(--ink-2); }
+  .small { font-size:13px; }
+
+  .banner { display:flex; align-items:center; gap:14px; padding:14px 18px; border-radius:var(--r); background:var(--warn-soft); color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 25%, transparent); }
+  .banner.bad { background:var(--bad-soft); color:var(--bad); border-color:color-mix(in srgb, var(--bad) 25%, transparent); }
+  .banner p { margin:0; flex:1; color:var(--ink); }
+  .banner b { color:inherit; }
+
+  .hero { display:grid; grid-template-columns: 1fr auto; gap:24px; align-items:center; }
+  .hero .label { font-size:13px; color:var(--ink-2); font-weight:550; }
+  .hero .count { font-size:44px; font-weight:700; letter-spacing:-.02em; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .hero .count span { font-size:20px; color:var(--ink-3); font-weight:550; }
+  .bar { height:8px; border-radius:4px; background:var(--line); overflow:hidden; margin:12px 0 8px; max-width:420px; }
+  .bar > i { display:block; height:100%; background:var(--accent); border-radius:4px; transition:width .5s; }
+  .hero .hint { font-size:13.5px; color:var(--ink-2); }
+  .actions { display:flex; flex-direction:column; gap:8px; align-items:stretch; min-width:220px; }
+  .running { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; background:var(--accent-soft); margin-top:16px; }
+  .running .line { flex:1; font:12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color:var(--ink); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+  .btn { border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:10px 16px; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .btn:hover:not(:disabled) { border-color:var(--ink-3); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .btn.primary:hover:not(:disabled) { filter:brightness(1.07); }
+  .btn.ghost { border-color:transparent; background:transparent; color:var(--accent); padding:8px 10px; }
+  .btn.ghost:hover:not(:disabled) { background:var(--accent-soft); }
+  .btn.danger { color:var(--bad); }
+  .btn.sm { padding:7px 12px; font-size:13.5px; border-radius:8px; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+
+  .stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; }
+  .stat .k { font-size:13px; color:var(--ink-2); font-weight:550; }
+  .stat .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:2px; }
+  .stat .v span { font-size:15px; color:var(--ink-3); font-weight:550; }
+  .stat .s { font-size:12.5px; color:var(--ink-3); }
+
+  .chart { display:flex; align-items:flex-end; gap:8px; height:120px; margin-top:8px; }
+  .col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; height:100%; justify-content:flex-end; }
+  .col .stack { width:100%; max-width:28px; display:flex; flex-direction:column-reverse; border-radius:5px; overflow:hidden; }
+  .col .stack i { display:block; }
+  .col .d { font-size:11px; color:var(--ink-3); }
+  .col.today .d { color:var(--ink); font-weight:650; }
+  .legend { display:flex; gap:16px; font-size:12.5px; color:var(--ink-2); margin-top:12px; }
+  .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; }
+
+  .tag { display:inline-flex; align-items:center; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:600; background:var(--line); color:var(--ink-2); white-space:nowrap; }
+  .tag.good { background:var(--good-soft); color:var(--good); } .tag.bad { background:var(--bad-soft); color:var(--bad); }
+  .tag.warn { background:var(--warn-soft); color:var(--warn); } .tag.info { background:var(--accent-soft); color:var(--accent); }
+
+  .seg { display:inline-flex; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; margin-bottom:14px; }
+  .seg button { border:0; background:transparent; padding:6px 14px; border-radius:7px; cursor:pointer; font-weight:550; font-size:13.5px; color:var(--ink-2); }
+  .seg button.on { background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
+  .list { display:flex; flex-direction:column; }
+  .item { display:grid; grid-template-columns: 52px 1fr auto; gap:14px; align-items:center; padding:12px 2px; border-top:1px solid var(--line); }
+  .item:first-child { border-top:0; }
+  .item .t { font-size:12.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+  .item .n { font-weight:600; }
+  .item .h { font-size:13px; color:var(--ink-2); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .item .main { min-width:0; }
+  .empty { color:var(--ink-3); padding:18px 0 6px; text-align:center; font-size:14px; }
+
+  .group { display:grid; gap:18px; }
+  .field > .fl { font-weight:600; font-size:14px; }
+  .field > .fh { font-size:13px; color:var(--ink-2); margin:2px 0 8px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; padding:8px; border:1px solid var(--line); border-radius:10px; background:var(--bg); cursor:text; min-height:46px; align-items:center; }
+  .chips:focus-within { border-color:var(--accent); }
+  .chip { display:inline-flex; align-items:center; gap:4px; padding:4px 6px 4px 10px; background:var(--surface); border:1px solid var(--line); border-radius:999px; font-size:13.5px; }
+  .chip button { border:0; background:transparent; cursor:pointer; color:var(--ink-3); font-size:15px; line-height:1; padding:0 4px; border-radius:50%; }
+  .chip button:hover { color:var(--bad); }
+  .chips input { border:0; outline:0; background:transparent; flex:1; min-width:140px; padding:4px; font-size:14px; }
+  .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .between { justify-content:space-between; }
+  .stepper { display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg); }
+  .stepper button { border:0; background:transparent; width:36px; height:38px; cursor:pointer; font-size:18px; color:var(--ink-2); }
+  .stepper button:hover { background:var(--line); }
+  .stepper input { width:56px; border:0; text-align:center; background:transparent; font-weight:650; font-size:15px; -moz-appearance:textfield; }
+  .stepper input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .switch { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:14px 0; border-top:1px solid var(--line); }
+  .switch.first { border-top:0; padding-top:4px; }
+  .switch .txt b { display:block; font-weight:600; font-size:14px; }
+  .switch .txt span { font-size:13px; color:var(--ink-2); }
+  .switch .extra { margin-top:8px; display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-2); flex-wrap:wrap; }
+  .switch .extra input { border:1px solid var(--line); border-radius:8px; background:var(--bg); padding:5px 8px; }
+  .switch .extra input[type=number] { width:64px; }
+  .tog { position:relative; width:42px; height:24px; flex:none; margin-top:2px; }
+  .tog input { opacity:0; width:0; height:0; position:absolute; }
+  .tog i { position:absolute; inset:0; border-radius:999px; background:var(--line); transition:background .2s; cursor:pointer; }
+  .tog i::after { content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .tog input:checked + i { background:var(--accent); }
+  .tog input:checked + i::after { transform:translateX(18px); }
+  .tog input:focus-visible + i { outline:2px solid var(--accent); outline-offset:2px; }
+  .twocol { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .savebar { position:sticky; bottom:16px; display:flex; align-items:center; gap:12px; padding:12px 14px 12px 18px; border-radius:12px; background:var(--ink); color:var(--surface); box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  .savebar span { flex:1; font-size:14px; }
+  .savebar .btn { border-color:transparent; }
+  .savebar .btn.ghost { color:var(--surface); }
+  .savebar .btn.ghost:hover { background:rgba(255,255,255,.12); }
+  .notice { font-size:13px; padding:10px 12px; border-radius:10px; background:var(--warn-soft); color:var(--ink); margin-top:10px; }
+
+  .viewer { width:100%; aspect-ratio:1320/1000; border:1px solid var(--line); border-radius:10px; background:#111; display:block; }
+  pre.log { margin:0; max-height:280px; overflow:auto; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px; font:12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space:pre-wrap; color:var(--ink-2); }
+
+  .modal-bg { position:fixed; inset:0; background:rgba(10,14,18,.45); display:grid; place-items:center; z-index:50; padding:20px; }
+  .modal { background:var(--surface); border-radius:16px; padding:24px; max-width:420px; width:100%; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  .modal h3 { margin:0 0 6px; font-size:17px; }
+  .modal p { margin:0 0 20px; color:var(--ink-2); font-size:14px; }
+  .modal .row { justify-content:flex-end; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translate(-50%, 10px); background:var(--ink); color:var(--surface); padding:10px 16px; border-radius:10px; font-size:14px; opacity:0; transition:all .2s; pointer-events:none; z-index:60; }
+  .toast.show { opacity:1; transform:translate(-50%, 0); }
+
+  @media (max-width: 760px) {
+    .hero { grid-template-columns:1fr; } .actions { min-width:0; }
+    .stats, .twocol { grid-template-columns:1fr; }
+    main { padding:16px; } .top-in { padding:12px 16px 0; }
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <div class="brand">
+    <div class="logo">in</div><h1>LinkedIn Connect</h1><div class="spacer"></div>
+    <span class="status" id="st-login"><span class="dot"></span><span>Checking…</span></span>
+  </div>
+  <nav>
+    <a href="#overview" data-tab="overview">Overview</a>
+    <a href="#activity" data-tab="activity">Activity</a>
+    <a href="#settings" data-tab="settings">Settings</a>
+    <a href="#browser" data-tab="browser">Browser</a>
+  </nav>
+</div></header>
+
+<main>
+  <!-- ================= OVERVIEW ================= -->
+  <section class="view" id="v-overview">
+    <div class="banner bad" id="bn-login" hidden>
+      <p><b>You're signed out of LinkedIn.</b> Sign in once in the Browser tab; the session is remembered.</p>
+      <button class="btn sm" data-go="browser">Sign in</button>
+    </div>
+    <div class="banner" id="bn-pause" hidden>
+      <p><b>Paused until <span></span>.</b> LinkedIn showed a warning, so runs are on hold for a few days.</p>
+      <button class="btn sm" id="btn-clear-pause">Resume now</button>
+    </div>
+
+    <div class="card">
+      <div class="hero">
+        <div>
+          <div class="label">Invites sent today</div>
+          <div class="count" id="h-count">–</div>
+          <div class="bar"><i id="h-bar" style="width:0"></i></div>
+          <div class="hint" id="h-hint"></div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="btn-run">Send invites</button>
+          <button class="btn" id="btn-accept">Accept incoming requests</button>
+          <button class="btn ghost" id="btn-dry">Preview who'd be invited</button>
+        </div>
+      </div>
+      <div class="running" id="running" hidden>
+        <span class="dot busy"></span>
+        <span class="line" id="run-line">Starting…</span>
+        <button class="btn sm ghost" data-go="browser">Watch</button>
+        <button class="btn sm danger" id="btn-stop">Stop</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><div class="k">Accepted today</div><div class="v" id="s-acc">–</div><div class="s">incoming requests</div></div>
+        <div class="stat"><div class="k">Withdrawn today</div><div class="v" id="s-wd">–</div><div class="s">old unanswered invites</div></div>
+        <div class="stat"><div class="k">This week</div><div class="v" id="s-week">–</div><div class="s" id="s-week-s"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row between"><h2>Last 14 days</h2><span class="small muted" id="last-run"></span></div>
+      <div class="chart" id="chart"></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Sent</span><span><i style="background:var(--good)"></i>Accepted</span><span><i style="background:var(--warn)"></i>Withdrawn</span></div>
+    </div>
+  </section>
+
+  <!-- ================= ACTIVITY ================= -->
+  <section class="view" id="v-activity" hidden>
+    <div class="card">
+      <div class="seg" id="seg">
+        <button data-list="invites" class="on">Invites today</button>
+        <button data-list="accepted">Accepted today</button>
+        <button data-list="runs">Run history</button>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+  </section>
+
+  <!-- ================= SETTINGS ================= -->
+  <section class="view" id="v-settings" hidden>
+    <form id="settings" class="group" autocomplete="off">
+      <div class="card">
+        <h2>Who to invite</h2>
+        <p class="lede">The bot searches LinkedIn for each phrase and only invites people whose headline matches.</p>
+        <div class="group">
+          <div class="field"><div class="fl">Search for</div><div class="fh">Each phrase is a separate LinkedIn people search. Press Enter to add.</div>
+            <div class="chips" data-name="search_keywords"></div></div>
+          <div class="field"><div class="fl">Headline must mention</div><div class="fh">Leave empty to invite anyone the search finds.</div>
+            <div class="chips" data-name="include_keywords"></div></div>
+          <div class="field"><div class="fl">Skip people whose headline mentions</div><div class="fh">For example students or people job hunting.</div>
+            <div class="chips" data-name="exclude_keywords"></div></div>
+          <div class="switch">
+            <div class="txt"><b>Also use My Network suggestions</b><span>People LinkedIn suggests to you, filtered by the headline rules above.</span></div>
+            <label class="tog"><input type="checkbox" name="use_suggested"><i></i></label></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How many</h2>
+        <p class="lede">LinkedIn allows roughly 100 invites a week. Around 15–20 a day is a safe pace.</p>
+        <div class="twocol">
+          <div class="field"><div class="fl">Invites per day</div><div class="fh">The daily quota for sending and for the schedule.</div>
+            <div class="stepper"><button type="button" data-step="-1" aria-label="Fewer">−</button><input type="number" name="invites_per_day" min="1" max="100"><button type="button" data-step="1" aria-label="More">+</button></div></div>
+          <div class="field"><div class="fl">Weekly limit</div><div class="fh">Hard stop across any 7 days.</div>
+            <div class="stepper"><button type="button" data-step="-5" aria-label="Lower">−</button><input type="number" name="weekly_cap" min="1" max="200"><button type="button" data-step="5" aria-label="Higher">+</button></div></div>
+        </div>
+        <div class="switch" style="margin-top:14px">
+          <div class="txt"><b>Warm up slowly</b><span>Start at 5 a day and add 5 each week until the daily number is reached.</span></div>
+          <label class="tog"><input type="checkbox" name="warmup_enabled"><i></i></label></div>
+        <div class="notice" id="warm-notice" hidden></div>
+      </div>
+
+      <div class="card">
+        <h2>Automation</h2>
+        <p class="lede">What happens on its own while the container is running.</p>
+        <div class="switch first">
+          <div class="txt"><b>Run every day</b><span>Sends the daily invites automatically.</span>
+            <div class="extra">at <input type="time" name="sched_time"> <label class="row" style="gap:6px"><input type="checkbox" name="sched_weekdays"> weekdays only</label></div></div>
+          <label class="tog"><input type="checkbox" name="sched_enabled"><i></i></label></div>
+        <div class="switch">
+          <div class="txt"><b>Accept incoming requests</b><span>Accept everyone who invited you, at the start of every run.</span></div>
+          <label class="tog"><input type="checkbox" name="accept_on_run"><i></i></label></div>
+        <div class="switch">
+          <div class="txt"><b>Withdraw old invites</b><span>Cancel invites nobody answered, so they stop counting against you.</span>
+            <div class="extra">older than <input type="number" name="withdraw_days" min="7" max="365"> days</div></div>
+          <label class="tog"><input type="checkbox" name="withdraw_enabled"><i></i></label></div>
+      </div>
+
+      <div class="savebar" id="savebar" hidden>
+        <span>You have unsaved changes</span>
+        <button type="button" class="btn ghost sm" id="btn-discard">Discard</button>
+        <button type="submit" class="btn primary sm">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= BROWSER ================= -->
+  <section class="view" id="v-browser" hidden>
+    <div class="card">
+      <div class="row between" style="margin-bottom:12px">
+        <div><h2>Live browser</h2><div class="small muted" id="br-sub">The bot's own browser. Watch it work, or sign in here.</div></div>
+        <div class="row">
+          <a class="btn ghost sm" id="viewer-open" target="_blank">Open full size ↗</a>
+          <button class="btn primary sm" id="btn-login">Sign in to LinkedIn</button>
+        </div>
+      </div>
+      <iframe id="viewer" class="viewer" title="Bot browser"></iframe>
+      <p class="small muted" style="margin:10px 0 0">To sign in, use your LinkedIn email and password; Google sign-in is blocked in automated browsers. Click inside the view before typing.</p>
+    </div>
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px"><h2>Log</h2><span class="small muted" id="log-file"></span></div>
+      <pre class="log" id="log">Nothing has run yet.</pre>
+    </div>
+  </section>
+</main>
+
+<div class="modal-bg" id="modal" hidden><div class="modal" role="dialog" aria-modal="true">
+  <h3 id="m-title"></h3><p id="m-body"></p>
+  <div class="row"><button class="btn" id="m-cancel">Cancel</button><button class="btn primary" id="m-ok">Continue</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const hhmm = iso => iso ? iso.slice(11, 16) : "";
+const when = iso => { if (!iso) return ""; const d = new Date(iso), t = new Date();
+  const day = d.toDateString() === t.toDateString() ? "Today" : d.toLocaleDateString([], { weekday:"short", day:"numeric", month:"short" });
+  return `${day}, ${d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })}`; };
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers:{ "Content-Type":"application/json" }, ...opts });
+  const b = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof b.detail === "string" ? b.detail : (b.detail ? "Check the values and try again." : r.statusText));
+  return b;
+}
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 3000); }
+function confirmBox(title, body, okText = "Continue") {
+  return new Promise(res => {
+    $("#m-title").textContent = title; $("#m-body").textContent = body; $("#m-ok").textContent = okText; $("#modal").hidden = false; $("#m-ok").focus();
+    const done = v => { $("#modal").hidden = true; $("#m-ok").onclick = $("#m-cancel").onclick = null; res(v); };
+    $("#m-ok").onclick = () => done(true); $("#m-cancel").onclick = () => done(false);
+  });
+}
+
+// ---------- tabs
+const vncUrl = `${location.protocol}//${location.hostname}:6080/vnc.html?autoconnect=1&resize=scale&reconnect=1&reconnect_delay=2000`;
+$("#viewer-open").href = vncUrl;
+function show(tab) {
+  if (!["overview","activity","settings","browser"].includes(tab)) tab = "overview";
+  $$("nav a").forEach(a => a.classList.toggle("on", a.dataset.tab === tab));
+  $$("section.view").forEach(v => v.hidden = v.id !== "v-" + tab);
+  if (tab === "browser" && !$("#viewer").getAttribute("src")) $("#viewer").src = vncUrl;
+}
+window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+document.addEventListener("click", e => { const g = e.target.closest("[data-go]"); if (g) location.hash = g.dataset.go; });
+
+let S = { status:null, stats:null, settings:null };
+
+// ---------- overview
+const RESULT = { ok:["good","Completed"], skipped:["", "Skipped"], stopped:["warn","Stopped"], error:["bad","Failed"], running:["info","Running"] };
+function renderOverview() {
+  const st = S.status, d = S.stats; if (!st || !d) return;
+  const t = d.today, running = st.job.running, signedOut = st.logged_in && !st.logged_in.ok;
+  $("#bn-login").hidden = !signedOut || running;
+  $("#bn-pause").hidden = !st.paused_until; if (st.paused_until) $("#bn-pause span").textContent = st.paused_until;
+
+  const left = t.target != null ? Math.max(0, t.target - t.sent) : null;
+  $("#h-count").innerHTML = `${t.sent}<span> / ${t.target ?? "–"}</span>`;
+  $("#h-bar").style.width = t.target ? Math.min(100, 100 * t.sent / t.target) + "%" : "0";
+  let hint;
+  if (t.week_sent >= t.weekly_cap) hint = `Weekly limit of ${t.weekly_cap} reached. Sending resumes as older invites age out.`;
+  else if (left == null) hint = "Today's quota is set when the first run of the day starts.";
+  else if (left === 0) hint = "Today's quota is done. Raise “Invites per day” in Settings to send more.";
+  else hint = `${left} more can go out today.`;
+  if (st.schedule.enabled && st.next_run) hint += ` Next automatic run: ${when(st.next_run)}.`;
+  $("#h-hint").textContent = hint;
+
+  const quotaDone = left === 0;
+  $("#btn-run").textContent = quotaDone ? "Today's quota is done" : (left != null ? `Send ${left} invite${left === 1 ? "" : "s"}` : "Send today's invites");
+  $("#btn-run").disabled = running || quotaDone || signedOut;
+  $("#btn-accept").disabled = $("#btn-dry").disabled = running || signedOut;
+  $("#running").hidden = !running;
+
+  $("#s-acc").textContent = t.accepted; $("#s-wd").textContent = t.withdrawn;
+  $("#s-week").innerHTML = `${t.week_sent}<span> / ${t.weekly_cap}</span>`;
+  $("#s-week-s").textContent = `${t.all_time} sent in total`;
+
+  const r = d.runs[0];
+  if (r) { const [c, w] = RESULT[r.status] || ["", r.status];
+    $("#last-run").innerHTML = `Last run ${esc(when(r.started))} <span class="tag ${c}">${w}</span>`; }
+
+  const max = Math.max(4, ...d.days.map(x => x.sent + x.accepted + x.withdrawn));
+  $("#chart").innerHTML = d.days.map((x, i) => {
+    const px = n => (n / max) * 92, isToday = i === d.days.length - 1;
+    const lbl = isToday ? "Today" : new Date(x.date + "T12:00").toLocaleDateString([], { day:"numeric" });
+    return `<div class="col ${isToday ? "today" : ""}" title="${x.date}: ${x.sent} sent, ${x.accepted} accepted, ${x.withdrawn} withdrawn">
+      <div class="stack"><i style="height:${px(x.sent)}px;background:var(--accent)"></i><i style="height:${px(x.accepted)}px;background:var(--good)"></i><i style="height:${px(x.withdrawn)}px;background:var(--warn)"></i></div>
+      <span class="d">${lbl}</span></div>`;
+  }).join("");
+}
+
+$("#btn-run").onclick = async () => {
+  const t = S.stats.today, left = t.target != null ? Math.max(0, t.target - t.sent) : null;
+  const ok = await confirmBox("Send connection requests?",
+    left != null ? `This sends up to ${left} real invite${left === 1 ? "" : "s"} on LinkedIn, using your search and headline settings.`
+                 : "This sends today's real invites on LinkedIn, using your search and headline settings.", "Send");
+  if (ok) act("/api/run", { dry_run:false }, "Sending invites…");
+};
+$("#btn-dry").onclick = () => act("/api/run", { dry_run:true, limit:10 }, "Preview started. Nothing will be clicked.");
+$("#btn-accept").onclick = async () => {
+  if (await confirmBox("Accept incoming requests?", "This accepts every pending connection request you've received.", "Accept all"))
+    act("/api/accept", { dry_run:false }, "Accepting requests…");
+};
+$("#btn-stop").onclick = () => act("/api/stop", {}, "Stopping…");
+$("#btn-login").onclick = () => act("/api/login", {}, "LinkedIn's sign-in page is opening below");
+$("#btn-clear-pause").onclick = async () => {
+  if (await confirmBox("Resume runs now?", "LinkedIn warned this account recently. Resuming early increases the risk of restrictions.", "Resume"))
+    act("/api/clear-pause", {}, "Runs resumed");
+};
+async function act(path, body, msg) {
+  try { await api(path, { method:"POST", body:JSON.stringify(body) }); toast(msg); refresh(true); }
+  catch (e) { toast(e.message); }
+}
+
+// ---------- activity
+let listKind = "invites";
+$("#seg").onclick = e => { const b = e.target.closest("button"); if (!b) return; listKind = b.dataset.list;
+  $$("#seg button").forEach(x => x.classList.toggle("on", x === b)); renderActivity(); };
+function cleanHeadline(h, name) {
+  return (h || "").split(" | ").map(p => p.trim())
+    .filter(p => p && !p.startsWith(name) && !/^•\s*\d|^(Connect|Ignore|Accept|IgnoreAccept)$|^Current:|^Past:|^Summary:|mutual connection/i.test(p))
+    .slice(0, 2).join(" · ");
+}
+const person = r => `<div class="n">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a>` : esc(r.name)}</div><div class="h">${esc(cleanHeadline(r.headline, r.name))}</div>`;
+function renderActivity() {
+  const d = S.stats; if (!d) return; let html = "";
+  if (listKind === "invites") html = d.invites.map(r => `<div class="item"><span class="t">${hhmm(r.time)}</span><div class="main">${person(r)}</div>
+      <span class="tag ${r.status === "sent" ? "good" : r.status === "failed" ? "bad" : ""}">${r.status === "sent" ? "Sent" : r.status === "unavailable" ? "Skipped" : "Failed"}${r.note ? " · note" : ""}</span></div>`).join("")
+      || `<div class="empty">No invites sent yet today.</div>`;
+  if (listKind === "accepted") html = d.accepted.map(r => `<div class="item"><span class="t">${hhmm(r.time)}</span><div class="main">${person(r)}</div>
+      <span class="tag good">Accepted</span></div>`).join("") || `<div class="empty">No requests accepted today.</div>`;
+  if (listKind === "runs") html = d.runs.map(r => { const [c, w] = RESULT[r.status] || ["", r.status];
+      const kind = r.trigger === "accept" ? "Accept requests" : r.trigger === "scheduled" ? "Scheduled run" : "Manual run";
+      const parts = [r.sent && `${r.sent} ${r.dry_run ? "would be invited" : "sent"}`, r.accepted && `${r.accepted} accepted`, r.withdrawn && `${r.withdrawn} withdrawn`].filter(Boolean);
+      const day = when(r.started).split(",")[0];
+      return `<div class="item"><span class="t">${hhmm(r.started)}</span>
+      <div class="main"><div class="n">${kind}${r.dry_run ? " (preview)" : ""}${day !== "Today" ? ` <span class="small muted" style="font-weight:400">${esc(day)}</span>` : ""}</div>
+      <div class="h" title="${esc(r.reason || "")}">${esc([parts.join(", ") || "Nothing to do", r.reason].filter(Boolean).join(" · "))}</div></div>
+      <span class="tag ${c}">${w}</span></div>`; }).join("") || `<div class="empty">No runs yet.</div>`;
+  $("#list").innerHTML = html;
+}
+
+// ---------- settings
+function chips(el) {
+  el.innerHTML = `<input placeholder="Type and press Enter">`; el._vals = [];
+  const input = el.querySelector("input");
+  el._render = () => { el.querySelectorAll(".chip").forEach(c => c.remove());
+    el._vals.forEach((v, i) => { const c = document.createElement("span"); c.className = "chip";
+      c.innerHTML = `${esc(v)}<button type="button" aria-label="Remove ${esc(v)}">×</button>`;
+      c.querySelector("button").onclick = () => { el._vals.splice(i, 1); el._render(); dirty(); }; el.insertBefore(c, input); }); };
+  el._set = vals => { el._vals = [...vals]; el._render(); };
+  const add = () => { const v = input.value.trim().replace(/,$/, ""); if (v && !el._vals.some(x => x.toLowerCase() === v.toLowerCase())) { el._vals.push(v); el._render(); dirty(); } input.value = ""; };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(); }
+    else if (e.key === "Backspace" && !input.value && el._vals.length) { el._vals.pop(); el._render(); dirty(); } });
+  input.addEventListener("blur", add);
+  el.addEventListener("click", e => { if (e.target === el) input.focus(); });
+}
+$$(".chips").forEach(chips);
+const F = $("#settings");
+function fillSettings(s) {
+  for (const k of ["search_keywords","include_keywords","exclude_keywords"]) $(`.chips[data-name=${k}]`)._set(s[k]);
+  F.use_suggested.checked = s.use_suggested; F.invites_per_day.value = s.invites_per_day; F.weekly_cap.value = s.weekly_cap;
+  F.warmup_enabled.checked = s.warmup_enabled; F.withdraw_enabled.checked = s.withdraw_enabled; F.withdraw_days.value = s.withdraw_days;
+  F.accept_on_run.checked = s.accept_on_run; F.sched_enabled.checked = s.schedule.enabled; F.sched_time.value = s.schedule.time;
+  F.sched_weekdays.checked = s.schedule.weekdays_only; $("#savebar").hidden = true; warmNotice();
+}
+function readSettings() {
+  const v = n => $(`.chips[data-name=${n}]`)._vals;
+  return { search_keywords:v("search_keywords"), include_keywords:v("include_keywords"), exclude_keywords:v("exclude_keywords"),
+    use_search:v("search_keywords").length > 0, use_suggested:F.use_suggested.checked,
+    invites_per_day:+F.invites_per_day.value || 1, weekly_cap:+F.weekly_cap.value || 1, warmup_enabled:F.warmup_enabled.checked,
+    withdraw_enabled:F.withdraw_enabled.checked, withdraw_days:+F.withdraw_days.value || 21, accept_on_run:F.accept_on_run.checked,
+    schedule:{ enabled:F.sched_enabled.checked, time:F.sched_time.value || "10:30", weekdays_only:F.sched_weekdays.checked } };
+}
+function dirty() { $("#savebar").hidden = false; warmNotice(); }
+function warmNotice() {
+  const n = +F.invites_per_day.value, wk = +F.weekly_cap.value, el = $("#warm-notice");
+  let msg = "";
+  if (F.warmup_enabled.checked && n > 5) { const w = Math.ceil((n - 5) / 5); msg = `Warm-up is on: the bot starts at 5 a day and reaches ${n} in about ${w} week${w === 1 ? "" : "s"}. Turn it off to send ${n} a day right away.`; }
+  else if (n * 5 > wk) msg = `At ${n} a day you'll reach the weekly limit of ${wk} in about ${Math.max(1, Math.floor(wk / n))} days.`;
+  el.textContent = msg; el.hidden = !msg;
+}
+F.addEventListener("input", dirty); F.addEventListener("change", dirty);
+$$("[data-step]").forEach(b => b.onclick = () => { const i = b.parentElement.querySelector("input");
+  i.value = Math.min(+i.max, Math.max(+i.min, (+i.value || 0) + +b.dataset.step)); dirty(); });
+$("#btn-discard").onclick = () => fillSettings(S.settings);
+F.addEventListener("submit", async e => {
+  e.preventDefault(); const body = readSettings();
+  if (!body.use_search && !body.use_suggested) return toast("Add a search phrase or turn on My Network suggestions.");
+  try { S.settings = await api("/api/settings", { method:"PUT", body:JSON.stringify(body) }); fillSettings(S.settings); toast("Saved"); refresh(true); }
+  catch (err) { toast(err.message); }
+});
+
+// ---------- browser + log
+async function renderLog() {
+  const l = await api("/api/logs?lines=300"); if (!l.file) return;
+  const el = $("#log"), atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
+  el.textContent = l.lines.join("\n") || "Starting…"; $("#log-file").textContent = l.file.replace(/^ui-|\.log$/g, "");
+  if (atBottom) el.scrollTop = el.scrollHeight;
+  const last = [...l.lines].reverse().find(x => /^\d\d:\d\d:\d\d/.test(x)) || "Starting…";
+  $("#run-line").textContent = last.replace(/^\d\d:\d\d:\d\d\s+\w+\s+/, "");
+}
+
+// ---------- header + polling
+function renderHeader() {
+  const st = S.status, [dot, txt] = $("#st-login").children;
+  if (st.job.running) { dot.className = "dot busy"; txt.textContent = st.job.kind === "login" ? "Waiting for you to sign in…" : `${st.job.kind[0].toUpperCase()}${st.job.kind.slice(1)} in progress`; }
+  else if (!st.logged_in) { dot.className = "dot"; txt.textContent = "LinkedIn not checked yet"; }
+  else { dot.className = "dot " + (st.logged_in.ok ? "good" : "bad"); txt.textContent = st.logged_in.ok ? "Signed in to LinkedIn" : "Signed out of LinkedIn"; }
+  $("#btn-login").disabled = st.job.running;
+  $("#br-sub").innerHTML = st.job.running
+    ? `<span class="dot busy" style="display:inline-block;margin-right:6px"></span>${st.job.kind === "login" ? "Sign in below with your LinkedIn email and password." : "The bot is working; you can watch it below."}`
+    : "Idle. The browser appears here when the bot runs or when you sign in.";
+  $("#btn-login").textContent = st.logged_in?.ok ? "Sign in again" : "Sign in to LinkedIn";
+}
+let timer;
+async function refresh(soon) {
+  clearTimeout(timer);
+  try {
+    const [status, stats] = await Promise.all([api("/api/status"), api("/api/stats")]);
+    S.status = status; S.stats = stats;
+    renderHeader(); renderOverview(); renderActivity(); await renderLog();
+    timer = setTimeout(refresh, status.job.running || soon ? 2000 : 8000);
+  } catch { timer = setTimeout(refresh, 5000); }
+}
+(async () => {
+  show(location.hash.slice(1));
+  try { S.settings = await api("/api/settings"); fillSettings(S.settings); } catch {}
+  refresh();
+})();
+</script>
+</body>
+</html>
